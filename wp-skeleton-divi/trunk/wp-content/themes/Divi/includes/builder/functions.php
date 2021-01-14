@@ -8,7 +8,7 @@
 
 if ( ! defined( 'ET_BUILDER_PRODUCT_VERSION' ) ) {
 	// Note, this will be updated automatically during grunt release task.
-	define( 'ET_BUILDER_PRODUCT_VERSION', '4.6.6' );
+	define( 'ET_BUILDER_PRODUCT_VERSION', '4.8.0' );
 }
 
 if ( ! defined( 'ET_BUILDER_VERSION' ) ) {
@@ -1214,6 +1214,31 @@ function et_fb_app_preferences_settings() {
 			'type'    => 'int',
 			'default' => 0,
 		),
+		// Re: "width/height": responsive dimensions presume portrait orientation.
+		'responsive_tablet_width'           => array(
+			'type'    => 'int',
+			'default' => 768,
+		),
+		'responsive_tablet_height'          => array(
+			'type'    => 'int',
+			'default' => 0,
+		),
+		'responsive_phone_width'            => array(
+			'type'    => 'int',
+			'default' => 400,
+		),
+		'responsive_phone_height'           => array(
+			'type'    => 'int',
+			'default' => 0,
+		),
+		'responsive_minimum_width'          => array(
+			'type'    => 'int',
+			'default' => 320,
+		),
+		'responsive_maximum_width'          => array(
+			'type'    => 'int',
+			'default' => 980,
+		),
 	);
 
 	return apply_filters( 'et_fb_app_preferences_defaults', $app_preferences );
@@ -1576,7 +1601,13 @@ function et_pb_process_computed_property() {
 	}
 	$module_slug       = isset( $_POST['module_type'] ) ? sanitize_text_field( $_POST['module_type'] ) : '';
 	$post_type         = isset( $_POST['post_type'] ) ? sanitize_text_field( $_POST['post_type'] ) : '';
-	$computed_property = isset( $_POST['computed_property'] ) ? sanitize_text_field( $_POST['computed_property'] ) : '';
+
+	// Since VB performance, it is introduced single ajax request for several property
+	// in that case, computed_property posted data can be as an array
+	// hence we get the raw post data value, then sanitize it afterward either as array or string.
+	// @phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized conditionally as string or array afterward.
+	$computed_property = isset( $_POST['computed_property'] ) ? $_POST['computed_property'] : '';
+	$computed_property = is_array( $computed_property ) ? array_map( 'sanitize_text_field', $computed_property ) : sanitize_text_field( $computed_property );
 
 	// get all fields for module.
 	$fields = ET_Builder_Element::get_module_fields( $post_type, $module_slug );
@@ -1584,13 +1615,36 @@ function et_pb_process_computed_property() {
 	// make sure only valid fields are being passed through.
 	$depends_on = array_intersect_key( $depends_on, $fields );
 
+	if ( is_array( $computed_property ) ) {
+		$results = array();
+
+		foreach ( $computed_property as $property ) {
+			if ( ! isset( $fields[ $property ], $fields[ $property ]['computed_callback'] ) ) {
+				continue;
+			}
+
+			$callback = $fields[ $property ]['computed_callback'];
+
+			if ( is_callable( $callback ) ) {
+				// @phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- The callback is hard-coded in module fields configuration.
+				$results[ $property ] = call_user_func( $callback, $depends_on, $conditional_tags, $current_page );
+			}
+		}
+
+		if ( empty( $results ) ) {
+			die( -1 );
+		}
+
+		die( wp_json_encode( $results ) );
+	}
+
 	// computed property field.
 	$field = $fields[ $computed_property ];
 
 	$callback = $field['computed_callback'];
 
 	if ( is_callable( $callback ) ) {
-		// @phpcs:ignore Generic.PHP.ForbiddenFunctions.Found
+		// @phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- The callback is hard-coded in module fields configuration.
 		die( wp_json_encode( call_user_func( $callback, $depends_on, $conditional_tags, $current_page ) ) );
 	} else {
 		die( -1 );
@@ -3963,6 +4017,21 @@ function et_pb_metabox_settings_save_details( $post_id, $post ) {
 
 	if ( isset( $_POST['et_pb_old_content'] ) ) {
 		update_post_meta( $post_id, '_et_pb_old_content', $_POST['et_pb_old_content'] );
+
+		/**
+		 * Fires after the `_et_pb_old_content` post meta is updated.
+		 *
+		 * In case you want to over-ride `_et_pb_old_content` content, this is the hook you should use.
+		 *
+		 * @see et_builder_wc_long_description_metabox_save()
+		 *
+		 * @since 3.29
+		 *
+		 * @param int $post_id Post ID.
+		 * $param WP_Post $post The Post.
+		 * $param array $_POST  Request variables. This could be used for Nonce verification, etc.
+		 */
+		do_action( 'et_pb_old_content_updated', $post_id, $post, $_POST );
 	} else {
 		delete_post_meta( $post_id, '_et_pb_old_content' );
 	}
@@ -5308,8 +5377,13 @@ if ( ! function_exists( 'et_pb_load_global_module' ) ) {
 				)
 			);
 
-			wp_reset_postdata();
 			if ( ! empty( $query->post ) ) {
+				// Call the_post() to properly configure post data. Make sure to call the_post() and
+				// wp_reset_postdata() only if the posts result exist to avoid unexpected issues.
+				$query->the_post();
+
+				wp_reset_postdata();
+
 				$global_shortcode = $query->post->post_content;
 
 				if ( '' !== $row_type && 'et_pb_row_inner' === $row_type ) {
@@ -12240,3 +12314,59 @@ if ( ! function_exists( 'et_format_parallax_bg_wrap_radius_values' ) ) :
 		return trim( implode( ' ', $radius_values ) );
 	}
 endif;
+
+if ( ! function_exists( 'et_builder_generate_css' ) ) {
+	/**
+	 * Generate CSS.
+	 *
+	 * @param array $args  Styles arg.
+	 *
+	 * @return string|void
+	 */
+	function et_builder_generate_css( $args ) {
+
+		$defaults = array(
+			'prefix' => '',
+			'suffix' => '',
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		/*
+		 * Bail early if we have no $selector elements or properties and $value.
+		 */
+		if ( ! $args['value'] || ! $args['selector'] ) {
+			return;
+		}
+
+		return sprintf( '%s { %s: %s; }', $args['selector'], $args['style'], $args['prefix'] . $args['value'] . $args['suffix'] );
+	}
+}
+
+if ( ! function_exists( 'et_builder_generate_css_style' ) ) {
+	/**
+	 * Generate CSS property.
+	 *
+	 * @param array $args Styles arg.
+	 *
+	 * @return string|void
+	 */
+	function et_builder_generate_css_style( $args ) {
+
+		$defaults = array(
+			'prefix' => '',
+			'suffix' => '',
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		/*
+		 * Bail early if we have no style and $value.
+		 */
+		if ( ! $args['value'] || ! $args['style'] ) {
+			return;
+		}
+
+		return sprintf( '%s: %s;', $args['style'], $args['prefix'] . $args['value'] . $args['suffix'] );
+	}
+}

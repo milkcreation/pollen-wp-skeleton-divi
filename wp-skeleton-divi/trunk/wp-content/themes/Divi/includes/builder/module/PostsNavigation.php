@@ -84,7 +84,7 @@ class ET_Builder_Module_Posts_Navigation extends ET_Builder_Module {
 			),
 			'prev_link_arrow' => array(
 				'label'    => esc_html__( 'Previous Link Arrow', 'et_builder' ),
-				'selector' => 'span.nav-previous a span',
+				'selector' => 'span.nav-previous .meta-nav',
 			),
 			'next_link'       => array(
 				'label'    => esc_html__( 'Next Link', 'et_builder' ),
@@ -92,7 +92,7 @@ class ET_Builder_Module_Posts_Navigation extends ET_Builder_Module {
 			),
 			'next_link_arrow' => array(
 				'label'    => esc_html__( 'Next Link Arrow', 'et_builder' ),
-				'selector' => 'span.nav-next a span',
+				'selector' => 'span.nav-next .meta-nav',
 			),
 		);
 
@@ -314,7 +314,16 @@ class ET_Builder_Module_Posts_Navigation extends ET_Builder_Module {
 		return $posts_navigation;
 	}
 
-	function render( $attrs, $content = null, $render_slug ) {
+	/**
+	 * Renders the module output.
+	 *
+	 * @param  array  $attrs       List of attributes.
+	 * @param  string $content     Content being processed.
+	 * @param  string $render_slug Slug of module that is used for rendering output.
+	 *
+	 * @return string
+	 */
+	public function render( $attrs, $content, $render_slug ) {
 		$multi_view    = et_pb_multi_view_options( $this );
 		$in_same_term  = $this->props['in_same_term'];
 		$taxonomy_name = $this->props['taxonomy_name'];

@@ -70,7 +70,7 @@ class ET_Builder_Module_Fullwidth_Menu extends ET_Builder_Module {
 					'css'             => array(
 						'main'         => "{$this->main_css_element} ul li a",
 						'limited_main' => "{$this->main_css_element} ul li a, {$this->main_css_element} ul li",
-						'hover'        => "{$this->main_css_element} ul li:hover a",
+						'hover'        => "{$this->main_css_element} ul li:hover > a",
 					),
 					'line_height'     => array(
 						'default' => '1em',
@@ -812,9 +812,10 @@ class ET_Builder_Module_Fullwidth_Menu extends ET_Builder_Module {
 					'selector'    => str_replace( '%%order_class%%', '%%order_class%%:hover', $selector ),
 					'declaration' => sprintf(
 						'display: %1$s;',
-						esc_html( $hover )
+						esc_html( $hover_display )
 					),
 				);
+
 				ET_Builder_Element::set_style( $render_slug, $el_style );
 			}
 
@@ -870,6 +871,11 @@ class ET_Builder_Module_Fullwidth_Menu extends ET_Builder_Module {
 		$logo_alt            = $this->props['logo_alt'];
 		$logo_url            = $this->props['logo_url'];
 		$logo_url_new_window = $this->props['logo_url_new_window'];
+
+		if ( empty( $logo_alt ) && ! empty( $this->props['logo'] ) ) {
+			$logo_id  = attachment_url_to_postid( esc_url( $this->props['logo'] ) );
+			$logo_alt = get_post_meta( $logo_id, '_wp_attachment_image_alt', true );
+		}
 
 		$logo_image_attrs = array(
 			'src'    => '{{logo}}',
@@ -997,7 +1003,16 @@ class ET_Builder_Module_Fullwidth_Menu extends ET_Builder_Module {
 		);
 	}
 
-	function render( $attrs, $content = null, $render_slug ) {
+	/**
+	 * Renders the module output.
+	 *
+	 * @param  array  $attrs       List of attributes.
+	 * @param  string $content     Content being processed.
+	 * @param  string $render_slug Slug of module that is used for rendering output.
+	 *
+	 * @return string
+	 */
+	public function render( $attrs, $content, $render_slug ) {
 		$menu_slug         = self::$menu_slug;
 		$background_color  = $this->props['background_color'];
 		$menu_id           = $this->props['menu_id'];
