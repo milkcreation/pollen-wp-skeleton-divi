@@ -1,5 +1,5 @@
 {
-    "name": "pollen/wp-skeleton-divi",
+    "name": "pollen-solutions/wp-skeleton-divi",
     "description": "Pollen Wordpress + Divi Skeleton - Standard Installation.",
     "homepage": "https://www.presstify.com/pollen-solutions/wp-skeleton-divi/",
     "keywords": [
@@ -29,10 +29,6 @@
         {
             "type": "composer",
             "url": "https://wpackagist.org"
-        },
-	{
-            "type": "vcs",
-            "url": "https://svn.presstify.com/themes/divi-child/"
         }
     ],
     "require": {
@@ -43,8 +39,8 @@
         "ext-openssl": "*",
         "composer/composer": "^2.0",
         "composer/installers": "~1.0",
+	"pollen-solutions/wp-divi-themechild": "1.0.x-dev",
         "pollen-solutions/wp-salt": "^1.0",
-	"themes/divi-child": "^1.0",
         "vlucas/phpdotenv": "^5.0",
         "wpackagist-theme/twentytwentyone": "^1.1"
     },
