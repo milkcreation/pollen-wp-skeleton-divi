@@ -1232,9 +1232,13 @@ function et_pb_retrieve_templates( $layout_type = 'layout', $module_width = '', 
 		)
 	);
 
-	wp_reset_postdata();
-
 	if ( ! empty( $query->posts ) ) {
+		// Call the_post() to properly configure post data. Make sure to call the_post() and
+		// wp_reset_postdata() only if the posts result exist to avoid unexpected issues.
+		$query->the_post();
+
+		wp_reset_postdata();
+
 		foreach ( $query->posts as $single_post ) {
 
 			if ( 'module' === $layout_type ) {
@@ -1614,9 +1618,13 @@ function et_pb_get_global_module() {
 			)
 		);
 
-		wp_reset_postdata();
-
 		if ( ! empty( $query->post ) ) {
+			// Call the_post() to properly configure post data. Make sure to call the_post() and
+			// wp_reset_postdata() only if the posts result exist to avoid unexpected issues.
+			$query->the_post();
+
+			wp_reset_postdata();
+
 			if ( 'skip' === $global_autop ) {
 				$post_content = $query->post->post_content;
 			} else {
@@ -2546,7 +2554,7 @@ if ( ! function_exists( 'et_builder_email_add_account' ) ) :
 
 		$provider_slug = isset( $_POST['et_provider'] ) ? sanitize_text_field( $_POST['et_provider'] ) : '';
 		$name_key      = "et_{$provider_slug}_account_name";
-		$account_name  = isset( $_POST[ $name_key ] ) ? sanitize_text_field( $_POST[ $name_key ] ) : '';
+		$account_name  = isset( $_POST[ $name_key ] ) ? sanitize_text_field( stripslashes( $_POST[ $name_key ] ) ) : ''; // phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized -- sanitize_text_field() function does sanitation.
 
 		if ( isset( $_POST['module_class'] ) && in_array( $_POST['module_class'], array( 'Signup', 'Contact_Form' ), true ) ) {
 			$module_class = sanitize_text_field( $_POST['module_class'] );
@@ -2682,8 +2690,8 @@ if ( ! function_exists( 'et_builder_email_get_lists_field_data' ) ) :
 			);
 
 			if ( 'Signup' === $module_class ) {
-				$signup_field                 = new ET_Builder_Module_Signup_Item();
-				$fields_data['custom_fields'] = $signup_field->get_fields();
+				$signup_field                = new ET_Builder_Module_Signup_Item();
+				$field_data['custom_fields'] = $signup_field->get_fields();
 			}
 		}
 		// phpcs:enable
@@ -2705,7 +2713,7 @@ if ( ! function_exists( 'et_builder_email_get_lists' ) ) :
 		et_core_security_check( 'manage_options', 'et_builder_email_fetch_lists_nonce' );
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- BB is common abbreviation.
 		$provider_slug = isset( $_POST['et_provider'] ) ? sanitize_text_field( $_POST['et_provider'] ) : '';
-		$account_name  = isset( $_POST['et_account'] ) ? sanitize_text_field( $_POST['et_account'] ) : '';
+		$account_name  = isset( $_POST['et_account'] ) ? sanitize_text_field( stripslashes( $_POST['et_account'] ) ) : ''; // phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized -- sanitize_text_field() function does sanitation.
 		$is_bb         = isset( $_POST['et_bb'] );
 
 		if ( empty( $provider_slug ) || empty( $account_name ) ) {
@@ -2835,7 +2843,7 @@ if ( ! function_exists( 'et_builder_email_remove_account' ) ) :
 		et_core_security_check( 'manage_options', 'et_builder_email_remove_account_nonce' );
 
 		$provider_slug = isset( $_POST['et_provider'] ) ? sanitize_text_field( $_POST['et_provider'] ) : '';
-		$account_name  = isset( $_POST['et_account'] ) ? sanitize_text_field( $_POST['et_account'] ) : '';
+		$account_name  = isset( $_POST['et_account'] ) ? sanitize_text_field( stripslashes( $_POST['et_account'] ) ) : ''; // phpcs:ignore ET.Sniffs.ValidatedSanitizedInput.InputNotSanitized -- sanitize_text_field() function does sanitation.
 
 		if ( isset( $_POST['module_class'] ) && in_array( $_POST['module_class'], array( 'Signup', 'Contact_Form' ), true ) ) {
 			$module_class = sanitize_text_field( $_POST['module_class'] );
@@ -2890,7 +2898,7 @@ if ( ! function_exists( 'et_pb_submit_subscribe_form' ) ) :
 		$use_spam_service = get_option( 'et_pb_signup_' . $checksum );
 
 		$provider_slug = $utils->array_get_sanitized( $_POST, 'et_provider' );
-		$account_name  = $utils->array_get_sanitized( $_POST, 'et_account' );
+		$account_name  = stripslashes( $utils->array_get_sanitized( $_POST, 'et_account' ) );
 		$custom_fields = $utils->array_get( $_POST, 'et_custom_fields', array() );
 		$provider      = $providers->get( $provider_slug, $account_name, 'builder' );
 
@@ -6378,7 +6386,7 @@ add_filter( 'et_builder_render_layout', 'et_builder_add_builder_content_wrapper'
  * that target elements both inside AND outside the wrapper element.
  *
  * @since 3.10
- * @since ?? New $inside_selectors parameter to extend default inside selector.
+ * @since 4.6.6 New $inside_selectors parameter to extend default inside selector.
  *
  * @param string  $selector         CSS selector to wrap.
  * @param string  $suffix           Selector partial to add to the wrapped selector after the wrapper (a space will be added first).
@@ -6476,7 +6484,7 @@ function et_builder_maybe_wrap_css_selector( $selector, $suffix = '', $clone = t
  * at once (eg. selector1, selector2, selector3)
  *
  * @since 3.10
- * @since ?? New $inside_selectors parameter to extend default inside selector.
+ * @since 4.6.6 New $inside_selectors parameter to extend default inside selector.
  *
  * @param string $selector         CSS selectors to wrap.
  * @param bool   $clone            {@see et_builder_maybe_wrap_css_selector()}.

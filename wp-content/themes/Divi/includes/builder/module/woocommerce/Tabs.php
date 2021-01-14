@@ -218,10 +218,11 @@ class ET_Builder_Module_Woocommerce_Tabs extends ET_Builder_Module_Tabs {
 				$index ++;
 
 				$nav .= sprintf(
-					'<li class="%3$s%1$s"><a href="#">%2$s</a></li>',
+					'<li class="%3$s%1$s"><a href="#tab-%4$s">%2$s</a></li>',
 					( 1 === $index ? ' et_pb_tab_active' : '' ),
 					esc_html( $tab['title'] ),
-					sprintf( '%1$s_tab', esc_attr( $name ) )
+					sprintf( '%1$s_tab', esc_attr( $name ) ),
+					esc_attr( $name )
 				);
 			}
 		}
@@ -387,6 +388,11 @@ class ET_Builder_Module_Woocommerce_Tabs extends ET_Builder_Module_Tabs {
 					}
 				}
 			} else {
+				// Skip if the 'callback' key does not exist.
+				if ( ! isset( $tab['callback'] ) ) {
+					continue;
+				}
+
 				// Get tab value based on defined product tab's callback attribute.
 				ob_start();
 				// @phpcs:ignore Generic.PHP.ForbiddenFunctions.Found
