@@ -33,7 +33,7 @@
     "ext-json": "*",
     "ext-openssl": "*",
     "composer/installers": "~1.0",
-    "pollen-solutions/wp-divi-themechild": "^1.0",
+    "pollen-solutions/wp-theme-divi": "^1.0",
     "pollen-solutions/wp-kernel": "^1.0",
     "wpackagist-theme/twentytwentyone": "^1.3"
   },
