@@ -216,14 +216,10 @@ function et_theme_builder_frontend_override_partial( $partial, $name, $action = 
 function et_theme_builder_extract_head( $html ) {
 	// We could use DOMDocument here to guarantee proper parsing but we need
 	// the most performant solution since we cannot reliably cache the result.
-	$matches = array();
-	$matched = preg_match( '/^[\s\S]*?<head[\s\S]*?>([\s\S]*?)<\/head>[\s\S]*$/i', $html, $matches );
+	$head = array();
+	preg_match( '/^[\s\S]*?<head[\s\S]*?>([\s\S]*?)<\/head>[\s\S]*$/i', $html, $head );
 
-	if ( $matched && ! isset( $matches[1] ) ) {
-		return '';
-	}
-
-	return trim( $matches[1] );
+	return ! empty( $head[1] ) ? trim( $head[1] ) : '';
 }
 
 /**
@@ -337,7 +333,7 @@ function et_theme_builder_frontend_render_layout( $layout_type, $layout_id ) {
 
 	$manager = $result['manager'];
 
-	if ( ! $manager->has_file() ) {
+	if ( ET_Builder_Element::$forced_inline_styles || ! $manager->has_file() ) {
 		$styles = et_pb_get_page_custom_css( $layout->ID ) . ET_Builder_Element::get_style( false, $layout->ID ) . ET_Builder_Element::get_style( true, $layout->ID );
 
 		if ( $styles ) {
@@ -345,6 +341,9 @@ function et_theme_builder_frontend_render_layout( $layout_type, $layout_id ) {
 
 			// Output the styles inline in the footer on first render as we are already
 			// past "head-late" where they will be enqueued once static files are generated.
+			if ( ET_Builder_Element::$forced_inline_styles ) {
+				$manager->forced_inline = true;
+			}
 			$manager->write_file_location = 'footer';
 			$manager->set_output_location( 'footer' );
 		}
