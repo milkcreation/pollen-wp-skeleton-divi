@@ -4773,16 +4773,16 @@ function et_load_social_icons() {
 	echo '</div>';
 	?>
 	<script type="text/javascript">
-      ( function( $ ) {
-        var isCustomPostType = <?php echo json_encode( $is_custom_post_type ); ?>;
+		(function($) {
+			var isCustomPostType = <?php echo wp_json_encode( $is_custom_post_type ); ?>;
 
-        $(document).ready(function() {
-          $(document).trigger('et-customizer-preview-load', {
-            isCustomPostType: isCustomPostType,
-            selectorWrapper: <?php echo json_encode( ET_BUILDER_CSS_PREFIX ); ?>
-    	  });
-        });
-      }( jQuery ) );
+			$(function() {
+				$(document).trigger('et-customizer-preview-load', {
+					isCustomPostType: isCustomPostType,
+					selectorWrapper: <?php echo wp_json_encode( ET_BUILDER_CSS_PREFIX ); ?>
+				});
+			});
+		}(jQuery));
 	</script>
 	<?php
 }
@@ -5747,6 +5747,7 @@ function et_divi_add_customizer_css() {
 		<?php } ?>
 		<?php if ( ! empty( $button_text_color_hover ) || 'rgba(255,255,255,0.2)' !== $button_bg_color_hover || 'rgba(0,0,0,0)' !== $button_border_color_hover || 3 !== $button_border_radius_hover || 0 !== $button_spacing_hover ) { ?>
 			<?php echo esc_attr( $css( 'body', '.et_pb_bg_layout_light.et_pb_button:hover' ) ); ?>,
+			<?php echo esc_attr( $css( 'body', '.et_pb_bg_layout_light .et_pb_button:hover' ) ); ?>,
 			<?php echo esc_attr( $css( 'body', '.et_pb_button:hover' ) ); ?> {
 				<?php if ( ! empty( $button_text_color_hover ) ) { ?>
 					color: <?php echo esc_html( $button_text_color_hover ); ?> !important;
@@ -7549,7 +7550,11 @@ function et_layout_body_class( $classes ) {
 
 	do_action( 'et_layout_body_class_before', $classes );
 
-	if ( 'on' === get_post_meta( get_the_ID(), '_et_pb_side_nav', true ) && et_pb_is_pagebuilder_used( get_the_ID() ) ) {
+	// Check here if we want to enable the dot navigation for the Frontpage or Single page.
+	// On archive pages `get_the_ID()` always returns the ID of the first post.
+	// For that we need to check if its a single page or not as Dot navigation can only be enabled in single pages.
+	// If we want to use disable this we can always remove the safe check from the `et_pb_side_nav_on_single` feature.
+	if ( apply_filters( 'et_pb_side_nav_on_single', is_singular() || is_home() || is_front_page() ) && 'on' === get_post_meta( get_the_ID(), '_et_pb_side_nav', true ) && et_pb_is_pagebuilder_used( get_the_ID() ) ) {
 		$classes[] = 'et_pb_side_nav_page';
 	}
 
@@ -8561,3 +8566,34 @@ function et_divi_disable_theme_builder_header_footer_on_blank_template( $layouts
 	return $layouts;
 }
 add_filter( 'et_theme_builder_template_layouts', 'et_divi_disable_theme_builder_header_footer_on_blank_template' );
+
+/**
+ * Remove invalid `frameborder` attribute from YouTube oEmbed iframe tags.
+ *
+ * @since ?.?
+ *
+ * @param string $html HTML string returned from oEmbed process.
+ * @param object $data Payload returned for oEmded processing.
+ * @param string $url URL originally passed to oEmbed process.
+ * @return string The iframe HTML snippet (modified or unmodified).
+ */
+function et_divi_oembed_dataparse_remove_yt_frameborder( $html, $data, $url ) {
+	// Array of possible matches for known YouTube domain names.
+	$matches = array(
+		'youtube.com',
+		'youtu.be',
+		'youtube-nocookie.com',
+		'.youtube.',
+	);
+
+	foreach ( $matches as $match ) {
+		// If we find a matching domain, strip out any frameborder attr before returning.
+		if ( false !== strpos( $url, $match ) ) {
+			return str_replace( 'frameborder="0"', '', $html );
+		}
+	}
+
+	// If there's no URL match, return the HTML string without modification.
+	return $html;
+}
+add_filter( 'oembed_dataparse', 'et_divi_oembed_dataparse_remove_yt_frameborder', 10, 3 );

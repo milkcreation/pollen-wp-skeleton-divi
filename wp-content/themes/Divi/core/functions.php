@@ -541,30 +541,41 @@ endif;
 
 
 if ( ! function_exists( 'et_core_register_admin_assets' ) ) :
-/**
- * Register Core admin assets.
- *
- * @since 1.0.0
- *
- * @private
- */
-function et_core_register_admin_assets() {
-	wp_register_style( 'et-core-admin', ET_CORE_URL . 'admin/css/core.css', array(), ET_CORE_VERSION );
-	wp_register_script( 'et-core-admin', ET_CORE_URL . 'admin/js/core.js', array(
-			'jquery',
-			'jquery-ui-tabs',
-			'jquery-form'
-	), ET_CORE_VERSION );
-	wp_localize_script( 'et-core-admin', 'etCore', array(
-		'ajaxurl' => is_ssl() ? admin_url( 'admin-ajax.php' ) : admin_url( 'admin-ajax.php', 'http' ),
-		'text'    => array(
-			'modalTempContentCheck' => esc_html__( 'Got it, thanks!', ET_CORE_TEXTDOMAIN ),
-		),
-	) );
+	/**
+	 * Register Core admin assets.
+	 *
+	 * @since ?.? Script 'et-core-admin' now loads in footer.
+	 * @since 1.0.0
+	 *
+	 * @private
+	 */
+	function et_core_register_admin_assets() {
+		wp_register_style( 'et-core-admin', ET_CORE_URL . 'admin/css/core.css', array(), ET_CORE_VERSION );
+		wp_register_script(
+			'et-core-admin',
+			ET_CORE_URL . 'admin/js/core.js',
+			array(
+				'jquery',
+				'jquery-ui-tabs',
+				'jquery-form',
+			),
+			ET_CORE_VERSION,
+			true
+		);
+		wp_localize_script(
+			'et-core-admin',
+			'etCore',
+			array(
+				'ajaxurl' => is_ssl() ? admin_url( 'admin-ajax.php' ) : admin_url( 'admin-ajax.php', 'http' ),
+				'text'    => array(
+					'modalTempContentCheck' => esc_html__( 'Got it, thanks!', 'et_core' ),
+				),
+			)
+		);
 
-	// enqueue common scripts as well
-	et_core_register_common_assets();
-}
+		// enqueue common scripts as well.
+		et_core_register_common_assets();
+	}
 endif;
 add_action( 'admin_enqueue_scripts', 'et_core_register_admin_assets' );
 
@@ -1193,7 +1204,7 @@ if ( ! function_exists( 'et_get_attachment_id_by_url_sql' ) ) :
 		$cleaned_url = preg_replace( '/^https?:/i', '', $normalized_url );
 
 		// Remove any thumbnail size suffix from the filename and use that as a fallback.
-		$fallback_url = preg_replace( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png)$/', '.$3', $cleaned_url );
+		$fallback_url = preg_replace( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png|svg)$/', '.$3', $cleaned_url );
 
 		if ( $cleaned_url === $fallback_url ) {
 			$attachments_query = $wpdb->prepare(
@@ -1320,7 +1331,7 @@ function et_get_attachment_id_by_url( $url ) {
 
 		if ( 0 === strpos( $normalized_url, $uploads_baseurl ) ) {
 			$file_path = str_replace( $uploads_baseurl, '', $normalized_url );
-			$file_path_no_resize = preg_replace( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png)$/', '.$3', $file_path );
+			$file_path_no_resize = preg_replace( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png|svg)$/', '.$3', $file_path );
 
 			if ( $file_path === $file_path_no_resize ) {
 				$attachments_sql_query = $wpdb->prepare(
@@ -1411,7 +1422,7 @@ function et_get_attachment_size_by_url( $url, $default_size = 'full' ) {
 
 	if ( strpos( $url, $metadata['file'] ) === ( strlen( $url ) - strlen( $metadata['file'] ) ) ) {
 		$size = array( $metadata['width'], $metadata['height'] );
-	} else if ( preg_match( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png)$/', $url, $match ) ) {
+	} else if ( preg_match( '/-(\d+)x(\d+)\.(jpg|jpeg|gif|png|svg)$/', $url, $match ) ) {
 		// Get the image width and height.
 		// Example: https://regex101.com/r/7JwGz7/1.
 		$size = array( $match[1], $match[2] );
@@ -1523,7 +1534,7 @@ function et_attachment_normalize_url( $url ) {
 
 	// Validate URL format and file extension.
 	// Example: https://regex101.com/r/dXcpto/1.
-	if ( ! filter_var( $url, FILTER_VALIDATE_URL ) || ! preg_match( '/^(.+)\.(jpg|jpeg|gif|png)$/', $url ) ) {
+	if ( ! filter_var( $url, FILTER_VALIDATE_URL ) || ! preg_match( '/^(.+)\.(jpg|jpeg|gif|png|svg)$/', $url ) ) {
 		return false;
 	}
 
