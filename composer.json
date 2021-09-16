@@ -1,7 +1,7 @@
 {
   "name": "pollen-solutions/wp-skeleton-divi",
   "description": "Pollen Wordpress + Divi Skeleton - Standard Installation.",
-  "homepage": "https://www.presstify.com/pollen-solutions/wp-skeleton-divi/",
+  "homepage": "https://github.com/milkcreation/pollen-wp-skeleton-divi.git",
   "keywords": [
     "pollen solutions",
     "skeleton",
@@ -9,7 +9,7 @@
     "standard",
     "Divi"
   ],
-  "time": "2021-07-13",
+  "time": "2021-09-16",
   "authors": [
     {
       "name": "Jordy Manner",
@@ -17,10 +17,6 @@
     }
   ],
   "repositories": [
-    {
-      "type": "composer",
-      "url": "https://composer.presstify.com/pollen-solutions/"
-    },
     {
       "type": "composer",
       "url": "https://wpackagist.org"
